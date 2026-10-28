@@ -1,0 +1,8 @@
+{% load static %}
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% if mode == 'signup' %}회원가입{% else %}로그인{% endif %} · Bees</title><link rel="stylesheet" href="{% static 'web/site.css' %}"></head>
+<body class="auth-page"><main class="auth-card"><div class="brand">bees<span>문서 공간</span></div><p class="eyebrow">팀의 문서를 한곳에</p><h1>{% if mode == 'signup' %}새 계정 만들기{% else %}다시 오신 것을 환영합니다{% endif %}</h1><p class="muted">그룹에 참여하고 문서의 모든 버전을 안전하게 관리하세요.</p>
+{% if error %}<div class="notice error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="stack" id="auth-form">{% csrf_token %}<label for="email">이메일</label><input id="email" name="email" type="email" autocomplete="email" required value="{{ request.POST.email|default:'' }}">
+{% if mode == 'signup' %}<label for="nickname">닉네임</label><input id="nickname" name="nickname" maxlength="150" autocomplete="nickname" required value="{{ request.POST.nickname|default:'' }}">{% endif %}
+<label for="password">비밀번호</label><input id="password" name="password" type="password" autocomplete="{% if mode == 'signup' %}new-password{% else %}current-password{% endif %}" required><button class="primary" type="submit">{% if mode == 'signup' %}회원가입{% else %}로그인{% endif %}</button></form>
+<p class="switch">{% if mode == 'signup' %}이미 계정이 있나요? <a href="{% url 'web-login' %}">로그인</a>{% else %}계정이 없나요? <a href="{% url 'web-signup' %}">회원가입</a>{% endif %}</p></main><script>document.getElementById('auth-form').addEventListener('submit', function(){this.querySelector('button').disabled=true;this.querySelector('button').textContent='처리 중…';});</script></body></html>

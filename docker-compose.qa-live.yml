@@ -1,0 +1,35 @@
+# Use with docker-compose.qa-validation.yml and --env-file .env.validation.
+# This project keeps the QA database/media but isolates real work in Redis DB 2.
+services:
+  web:
+    container_name: bees_qa_live_web
+    command: python manage.py runserver --insecure 0.0.0.0:8000
+    ports:
+      - "127.0.0.1:18082:8000"
+    environment: &live_environment
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env.validation}
+      AI_INDEX_ENABLED: "true"
+      AI_AUTO_INDEX_ENABLED: "false"
+      AI_APPROVED_GROUP_ID: "4"
+      AI_INDEX_CURRENT_ONLY: "true"
+      AI_EMBEDDING_PROVIDER: openai
+      AI_EMBEDDING_MODEL: text-embedding-3-small
+      AI_EMBEDDING_DIMENSION: "512"
+      AI_INDEX_REVISION: group4-live-v1
+      AI_CHUNK_CHARS: "1200"
+      AI_CHUNK_OVERLAP_CHARS: "160"
+      AI_MAX_ATTEMPTS: "1"
+      AI_MANUAL_RETRY_ENABLED: "false"
+      AI_QA_ENABLED: "true"
+      AI_QA_TOTAL_QUESTION_LIMIT: "3"
+      AI_QA_MAX_ATTEMPTS: "1"
+      AI_LLM_PROVIDER: openai
+      AI_LLM_EXTERNAL_ENABLED: "true"
+      AI_LLM_MODEL: gpt-4o-mini
+      AI_LLM_MAX_OUTPUT_TOKENS: "200"
+      CELERY_BROKER_URL: redis://bees_stage1_validation_redis:6379/2
+      CELERY_TASK_DEFAULT_QUEUE: qa_group4_real
+  worker:
+    container_name: bees_qa_live_worker
+    command: celery -A config worker --loglevel=warning --concurrency=1 -Q qa_group4_real
+    environment: *live_environment

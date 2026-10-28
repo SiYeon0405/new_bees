@@ -1,0 +1,85 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: bees_openai_validation_mysql
+    environment:
+      MYSQL_DATABASE: bees_openai_eval
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:13308:3306"
+    volumes:
+      - ./.validation/openai/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: bees_openai_validation_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - ./.validation/openai/redis:/data
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    container_name: bees_openai_validation_qdrant
+    volumes:
+      - ./.validation/openai/qdrant:/qdrant/storage
+
+  web:
+    build: .
+    container_name: bees_openai_validation_web
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "127.0.0.1:18081:8000"
+    volumes:
+      - ./.validation/openai/media:/app/private_media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    environment: &app_environment
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: bees_openai_eval
+      MYSQL_TEST_DATABASE: bees_openai_eval_test
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "true"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      MEDIA_ROOT: /app/private_media
+      AI_REAL_EVAL_ENABLED: ${AI_REAL_EVAL_ENABLED:-false}
+      AI_INDEX_ENABLED: ${AI_REAL_EVAL_ENABLED:-false}
+      AI_MANUAL_RETRY_ENABLED: "false"
+      AI_EMBEDDING_PROVIDER: openai
+      AI_EMBEDDING_MODEL: text-embedding-3-small
+      AI_EMBEDDING_DIMENSION: "512"
+      AI_INDEX_REVISION: openai-eval-v1
+      AI_CHUNK_CHARS: "1200"
+      AI_CHUNK_OVERLAP_CHARS: "160"
+      AI_MAX_ATTEMPTS: "1"
+      AI_MAX_EMBEDDING_INPUT_BYTES: "20000"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env.validation}
+      QDRANT_URL: http://qdrant:6333
+      CELERY_BROKER_URL: redis://redis:6379/0
+
+  worker:
+    build: .
+    container_name: bees_openai_validation_worker
+    command: celery -A config worker --loglevel=warning --concurrency=1
+    volumes:
+      - ./.validation/openai/media:/app/private_media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    environment: *app_environment

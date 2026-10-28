@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bees 문서 공간</title>
+  <link rel="stylesheet" href="{% static 'web/site.css' %}">
+</head>
+<body data-page="{{ page }}" data-group-id="{{ group_id|default:'' }}" data-file-id="{{ file_id|default:'' }}" data-user-id="{{ request.user.id }}">
+  <header class="topbar">
+    <a class="brand" href="{% url 'web-home' %}">bees<span>문서 공간</span></a>
+    <div class="account">
+      {% if group_id %}<a href="{% url 'web-ask' group_id %}">질문하기</a>{% endif %}
+      <span>{{ request.user.nickname }}</span>
+      <form action="{% url 'web-logout' %}" method="post">{% csrf_token %}<button class="ghost" type="submit">로그아웃</button></form>
+    </div>
+  </header>
+  <main class="shell">
+    <nav class="crumb" id="crumb"><a href="{% url 'web-home' %}">내 그룹</a></nav>
+    <div id="message" class="notice" role="status" aria-live="polite" hidden></div>
+    <div id="content" aria-live="polite"><p class="muted">불러오는 중…</p></div>
+  </main>
+  <input type="hidden" id="csrf" value="{{ csrf_token }}">
+  <script src="{% static 'web/app.js' %}?v=20261028-loading-fix" defer></script>
+</body>
+</html>

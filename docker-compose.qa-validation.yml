@@ -1,0 +1,45 @@
+services:
+  web:
+    build: .
+    container_name: bees_qa_validation_web
+    command: sleep infinity
+    volumes:
+      - ./.validation/qa/media:/app/private_media
+    environment: &qa_environment
+      MYSQL_HOST: bees_stage1_validation_mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: bees_qa_validation
+      MYSQL_TEST_DATABASE: bees_qa_validation_test
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      MEDIA_ROOT: /app/private_media
+      AI_INDEX_ENABLED: "true"
+      AI_EMBEDDING_PROVIDER: fake
+      AI_EMBEDDING_MODEL: deterministic-test-v1
+      AI_EMBEDDING_DIMENSION: "16"
+      AI_INDEX_REVISION: qa-validation-v1
+      AI_QA_ENABLED: "true"
+      AI_LLM_PROVIDER: fake
+      AI_LLM_EXTERNAL_ENABLED: "false"
+      QDRANT_URL: http://bees_stage1_validation_qdrant:6333
+      CELERY_BROKER_URL: redis://bees_stage1_validation_redis:6379/1
+      CELERY_TASK_DEFAULT_QUEUE: qa_validation
+    networks:
+      - fake_validation
+
+  worker:
+    build: .
+    container_name: bees_qa_validation_worker
+    command: celery -A config worker --loglevel=warning --concurrency=1 -Q qa_validation
+    volumes:
+      - ./.validation/qa/media:/app/private_media
+    environment: *qa_environment
+    networks:
+      - fake_validation
+
+networks:
+  fake_validation:
+    external: true
+    name: bees_stage1_validation_default

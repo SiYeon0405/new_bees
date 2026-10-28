@@ -1,0 +1,27 @@
+{
+  "documents": [
+    {"key":"auth-policy","group":"alpha","versions":[{"number":1,"text":"# 인증 정책\n\n로그인은 이메일과 비밀번호로 수행한다. 성공하면 access와 refresh JWT를 반환한다.\n\naccess 토큰은 60분, refresh 토큰은 1일 동안 유효하다. 보호 API는 Bearer access 토큰 또는 같은 출처 세션을 확인한다.\n\n세션으로 상태를 변경하는 요청에는 CSRF 토큰이 필요하다. 로그아웃하면 세션을 만료시킨다."}]},
+    {"key":"file-policy","group":"alpha","versions":[{"number":1,"text":"# 파일 정책 이전 버전\n\nTXT와 Markdown 파일을 허용한다. 이전 파일 크기 제한은 2MB였다. UTF-8 텍스트만 저장한다."},{"number":2,"text":"# 파일 정책 최신 버전\n\nTXT와 Markdown 파일을 허용한다. 현재 파일 크기 제한은 5MB이다. 빈 파일과 잘못된 UTF-8은 거절한다.\n\n새 버전은 원본을 덮어쓰지 않는다. 파일명은 표시용이고 실제 저장 경로에는 내부 ID를 사용한다."}]},
+    {"key":"api-contract","group":"alpha","versions":[{"number":1,"text":"# API 응답 계약\n\nPOST /api/groups/{group_id}/files/ 업로드 성공 응답은 201이다. 응답에는 file, version, ai_index가 있다.\n\n미인증 API 요청은 401, 접근 불가 그룹이나 문서는 404, 동일한 현재 버전 내용의 재요청은 409를 반환한다.\n\nGET /api/groups/{group_id}/files/{file_id}/versions/{version_id}/download/는 인증과 그룹 멤버십을 검사한다."}]},
+    {"key":"group-permission","group":"alpha","versions":[{"number":1,"text":"# 그룹 권한\n\n현재 GroupMember만 그룹 문서 목록과 원본을 조회할 수 있다. 탈퇴한 멤버는 즉시 접근할 수 없다.\n\n초대 코드는 그룹 소유자만 생성하고 24시간 뒤 만료한다. 초대 가입은 로그인한 본인에게만 적용한다.\n\n문서 논리 삭제는 최초 업로더 또는 그룹 소유자만 할 수 있다."}]},
+    {"key":"version-policy","group":"alpha","versions":[{"number":1,"text":"# 색인과 버전 정책\n\n새 파일 버전이 색인 중이면 이전 READY 버전이 계속 검색된다. 전체 청크가 저장된 뒤에만 새 버전이 READY가 된다.\n\n문서를 논리 삭제하면 활성 색인을 제거하고 검색 결과에서 즉시 제외한다. 늦게 끝난 이전 버전 작업은 최신 검색 대상을 되돌리지 않는다."}]},
+    {"key":"beta-private","group":"beta","versions":[{"number":1,"text":"# 베타 그룹 비공개 운영 메모\n\n베타 그룹의 배포 승인 담당자는 민지다. 배포 창은 금요일 오후 4시다. 이 문서는 알파 그룹에 공개하지 않는다."}]}
+  ],
+  "questions": [
+    {"id":"Q01","group":"alpha","query":"로그인에 쓰는 계정 식별자는 무엇인가요?","expected_file":"auth-policy","expected_version":1,"evidence":"이메일과 비밀번호","type":"paraphrase"},
+    {"id":"Q02","group":"alpha","query":"access JWT는 몇 분 동안 유효해?","expected_file":"auth-policy","expected_version":1,"evidence":"60분","type":"paraphrase"},
+    {"id":"Q03","group":"alpha","query":"session based write request needs which anti-forgery value?","expected_file":"auth-policy","expected_version":1,"evidence":"CSRF 토큰","type":"mixed-language"},
+    {"id":"Q04","group":"alpha","query":"지금 문서 업로드 용량 상한은?","expected_file":"file-policy","expected_version":2,"evidence":"현재 파일 크기 제한은 5MB","type":"version-conflict"},
+    {"id":"Q05","group":"alpha","query":"예전 파일 크기 제한 2MB가 아직 적용돼?","expected_file":"file-policy","expected_version":2,"evidence":"현재 파일 크기 제한은 5MB","type":"version-conflict"},
+    {"id":"Q06","group":"alpha","query":"빈 텍스트 파일은 저장 가능한가요?","expected_file":"file-policy","expected_version":2,"evidence":"빈 파일과 잘못된 UTF-8은 거절","type":"paraphrase"},
+    {"id":"Q07","group":"alpha","query":"POST /api/groups/{group_id}/files/ 성공 status code는?","expected_file":"api-contract","expected_version":1,"evidence":"업로드 성공 응답은 201","type":"exact-path"},
+    {"id":"Q08","group":"alpha","query":"409 response는 어떤 중복 요청에서 나오나요?","expected_file":"api-contract","expected_version":1,"evidence":"동일한 현재 버전 내용의 재요청은 409","type":"exact-code"},
+    {"id":"Q09","group":"alpha","query":"문서 다운로드 API는 member check 하나요?","expected_file":"api-contract","expected_version":1,"evidence":"인증과 그룹 멤버십을 검사","type":"mixed-language"},
+    {"id":"Q10","group":"alpha","query":"팀에서 나간 사람은 자료를 계속 읽을 수 있나요?","expected_file":"group-permission","expected_version":1,"evidence":"탈퇴한 멤버는 즉시 접근할 수 없다","type":"paraphrase"},
+    {"id":"Q11","group":"alpha","query":"invite code 만료 시간은?","expected_file":"group-permission","expected_version":1,"evidence":"24시간 뒤 만료","type":"mixed-language"},
+    {"id":"Q12","group":"alpha","query":"새 문서 버전 처리 중 검색은 어느 버전을 쓰나요?","expected_file":"version-policy","expected_version":1,"evidence":"이전 READY 버전이 계속 검색","type":"paraphrase"},
+    {"id":"Q13","group":"alpha","query":"문서를 지우면 vector search에서 언제 사라져?","expected_file":"version-policy","expected_version":1,"evidence":"검색 결과에서 즉시 제외","type":"mixed-language"},
+    {"id":"Q14","group":"alpha","query":"베타 그룹의 배포 승인 담당자는 누구인가요?","expected_file":null,"expected_version":null,"evidence":null,"type":"cross-group-unanswerable"},
+    {"id":"Q15","group":"beta","query":"배포 승인 담당자와 금요일 배포 시간은?","expected_file":"beta-private","expected_version":1,"evidence":"배포 승인 담당자는 민지다. 배포 창은 금요일 오후 4시","type":"private-group"}
+  ]
+}

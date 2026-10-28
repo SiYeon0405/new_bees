@@ -4,3 +4,7 @@ djangorestframework-simplejwt
 PyMySQL
 Pillow
 cryptography
+celery>=5.5,<6
+redis>=5,<7
+qdrant-client>=1.15,<1.17
+openai>=2,<3

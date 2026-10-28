@@ -1,5 +1,23 @@
 # 🐝 시연공주와 꿀벌들
 
+## 18082 그룹 4 실제 AI 화면
+
+기존 검증용 MySQL·Redis·Qdrant 컨테이너가 실행 중이고, Git 추적 대상이 아닌 `.env.validation`에 `OPENAI_API_KEY` 등 필요한 설정이 있을 때 프로젝트 최상위에서 실행합니다. 키 값이나 전체 Compose 설정을 출력하지 마세요.
+
+```powershell
+docker compose -p bees_qa_live --env-file .env.validation -f docker-compose.qa-validation.yml -f docker-compose.qa-live.yml up -d --no-deps web worker
+```
+
+접속: `http://127.0.0.1:18082/web/groups/4/ask/` (로그인이 필요합니다). 현재 그룹 4의 최신 문서 5버전은 별도 실제 임베딩 색인에 준비됐고, 사용자가 화면에서 답변 표시를 확인했습니다.
+
+중지할 때는 데이터와 볼륨을 보존하는 다음 명령을 사용합니다.
+
+```powershell
+docker stop bees_qa_live_web bees_qa_live_worker
+```
+
+제한: 그룹 4의 실제 LLM 질문은 **총 3건**이며 실패한 질문도 포함됩니다. 자동 재시도는 없고, 추가 업로드의 유료 자동 색인은 꺼져 있습니다. 새 버전의 실제 색인은 별도 승인과 수동 작업이 필요합니다. 기존 fake 색인·큐는 분리돼 있습니다. 실제 답변의 사실 정확성·실제 청구액·모바일 화면은 별도로 확인해야 합니다. 이 구성은 로컬 검증용 Django 서버입니다.
+
 **👩‍💻 개발자 중심 협업 웹 플랫폼**  
 GitHub의 단점 보완 + Discord의 실시간 피드백 장점을 융합한  
 **개발 협업을 위한 그룹 스페이스 웹**입니다.

@@ -6,6 +6,7 @@ from users.views import EmailTokenObtainPairView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
+    path('web/', include('config.web_urls')),
     # ✅ Django 관리자 페이지
     path('admin/', admin.site.urls),
 
@@ -15,4 +16,7 @@ urlpatterns = [
 
     # ✅ 사용자 관련 API (회원가입, 마이페이지, 비밀번호 변경, 탈퇴 등)
     path('api/users/', include('users.urls')),
+    path('api/groups/', include('groups.urls')),
+    path('api/groups/', include('files.urls')),
+    path('api/groups/', include('ai_assistant.urls')),
 ]

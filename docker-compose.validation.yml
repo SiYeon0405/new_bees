@@ -1,0 +1,97 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: bees_stage1_validation_mysql
+    environment:
+      MYSQL_DATABASE: bees_stage1_validation_dev
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:13307:3306"
+    volumes:
+      - ./.validation/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build: .
+    container_name: bees_stage1_validation_web
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "127.0.0.1:18080:8000"
+    volumes:
+      - ./.validation/media:/app/private_media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: bees_stage1_validation_dev
+      MYSQL_TEST_DATABASE: bees_stage1_validation_test
+      MEDIA_ROOT: /app/private_media
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "true"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      AI_INDEX_ENABLED: "true"
+      AI_QA_ENABLED: "true"
+      AI_LLM_PROVIDER: fake
+      AI_EMBEDDING_PROVIDER: fake
+      AI_EMBEDDING_MODEL: deterministic-test-v1
+      AI_EMBEDDING_DIMENSION: "16"
+      AI_INDEX_REVISION: validation-v1
+      QDRANT_URL: http://qdrant:6333
+      CELERY_BROKER_URL: redis://redis:6379/0
+
+  worker:
+    build: .
+    container_name: bees_stage1_validation_worker
+    command: celery -A config worker --loglevel=warning --concurrency=1
+    volumes:
+      - ./.validation/media:/app/private_media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: bees_stage1_validation_dev
+      MYSQL_TEST_DATABASE: bees_stage1_validation_test
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      MEDIA_ROOT: /app/private_media
+      AI_INDEX_ENABLED: "true"
+      AI_QA_ENABLED: "true"
+      AI_LLM_PROVIDER: fake
+      AI_EMBEDDING_PROVIDER: fake
+      AI_EMBEDDING_MODEL: deterministic-test-v1
+      AI_EMBEDDING_DIMENSION: "16"
+      AI_INDEX_REVISION: validation-v1
+      QDRANT_URL: http://qdrant:6333
+      CELERY_BROKER_URL: redis://redis:6379/0
+
+  redis:
+    image: redis:7-alpine
+    container_name: bees_stage1_validation_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - ./.validation/redis:/data
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    container_name: bees_stage1_validation_qdrant
+    volumes:
+      - ./.validation/qdrant:/qdrant/storage

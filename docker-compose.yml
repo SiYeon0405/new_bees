@@ -1,17 +1,15 @@
-version: "3.8"
-
 services:
   db:
     image: mysql:8.0
-    container_name: django-mysql-db
-    restart: always
     environment:
-      MYSQL_DATABASE: bees_db
-      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: bees_dev
+      MYSQL_USER: bees
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
-      - ./db:/var/lib/mysql
+      - bees_dev_data:/var/lib/mysql
     healthcheck:  # ✅ 추가: db 준비 완료 확인용
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -20,10 +18,9 @@ services:
 
   web:
     build: .
-    container_name: django-web
-    command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./backend:/app
+      - ./private_media:/app/private_media
+    command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
     depends_on:
@@ -32,3 +29,12 @@ services:
     environment:
       MYSQL_HOST: db
       MYSQL_PORT: 3306
+      MYSQL_DATABASE: bees_dev
+      MYSQL_USER: bees
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+
+volumes:
+  bees_dev_data:

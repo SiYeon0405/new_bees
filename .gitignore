@@ -56,6 +56,14 @@ coverage.xml
 local_settings.py
 db.sqlite3
 db/
+.env
+.env.validation
+.validation/
+backend/private_media/
+private_media/
+.venv/
+.venv312/
+.local-validation.sqlite3
 
 # Flask stuff:
 instance/

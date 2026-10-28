@@ -7,9 +7,9 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 보안
-SECRET_KEY = 'django-insecure-#^#r$%hmhag16_cv^zo5=u3jhwrrc43@@7@7$zeg=y59abvyem'
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+DEBUG = os.getenv('DJANGO_DEBUG', 'false').lower() == 'true'
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if host.strip()]
 
 # 앱 등록
 INSTALLED_APPS = [
@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'files',
     'comments',
     'notifications',
+    'ai_assistant',
 
     # 외부 라이브러리
     'rest_framework',
@@ -55,7 +56,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'config' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -75,16 +76,22 @@ pymysql.install_as_MySQLdb()
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bees_db',
-        'USER': 'root',
-        'PASSWORD': '1234',
+        'NAME': os.getenv('MYSQL_DATABASE', 'bees_dev'),
+        'USER': os.getenv('MYSQL_USER', 'bees'),
+        'PASSWORD': os.getenv('MYSQL_PASSWORD', ''),
         'HOST': os.getenv('MYSQL_HOST', '127.0.0.1'),
         'PORT': os.getenv('MYSQL_PORT', '3307'),
+        'TEST': {'NAME': os.getenv('MYSQL_TEST_DATABASE', 'test_' + os.getenv('MYSQL_DATABASE', 'bees_dev'))},
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
+if os.getenv('DJANGO_DB_ENGINE') == 'sqlite':
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.getenv('SQLITE_PATH', str(BASE_DIR / 'db.sqlite3')),
+    }
 
 # 비밀번호 검증
 AUTH_PASSWORD_VALIDATORS = [
@@ -102,6 +109,8 @@ USE_TZ = False
 
 # 정적 파일
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'config' / 'static']
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', str(BASE_DIR / 'private_media'))
 
 # 기본 필드 타입
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -124,3 +133,40 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+AI_INDEX_ENABLED = os.getenv('AI_INDEX_ENABLED', 'false').lower() == 'true'
+AI_AUTO_INDEX_ENABLED = os.getenv('AI_AUTO_INDEX_ENABLED', 'true').lower() == 'true'
+AI_APPROVED_GROUP_ID = int(os.getenv('AI_APPROVED_GROUP_ID', '0'))
+AI_INDEX_CURRENT_ONLY = os.getenv('AI_INDEX_CURRENT_ONLY', 'false').lower() == 'true'
+AI_EMBEDDING_PROVIDER = os.getenv('AI_EMBEDDING_PROVIDER', 'disabled')
+AI_EMBEDDING_MODEL = os.getenv('AI_EMBEDDING_MODEL', 'text-embedding-3-small')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+AI_EMBEDDING_DIMENSION = int(os.getenv('AI_EMBEDDING_DIMENSION', '512'))
+AI_CHUNK_CHARS = int(os.getenv('AI_CHUNK_CHARS', '1800'))
+AI_CHUNK_OVERLAP_CHARS = int(os.getenv('AI_CHUNK_OVERLAP_CHARS', '240'))
+AI_MAX_DOCUMENT_CHARS = int(os.getenv('AI_MAX_DOCUMENT_CHARS', '200000'))
+AI_INDEX_REVISION = os.getenv('AI_INDEX_REVISION', 'v1')
+AI_SPLIT_REVISION = os.getenv('AI_SPLIT_REVISION', 'paragraph-char-v1')
+AI_MAX_ATTEMPTS = int(os.getenv('AI_MAX_ATTEMPTS', '3'))
+AI_MANUAL_RETRY_ENABLED = os.getenv('AI_MANUAL_RETRY_ENABLED', 'true').lower() == 'true'
+AI_MAX_EMBEDDING_INPUT_BYTES = int(os.getenv('AI_MAX_EMBEDDING_INPUT_BYTES', '100000'))
+AI_LEASE_SECONDS = int(os.getenv('AI_LEASE_SECONDS', '180'))
+QDRANT_URL = os.getenv('QDRANT_URL', 'http://qdrant:6333')
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_TASK_DEFAULT_QUEUE = os.getenv('CELERY_TASK_DEFAULT_QUEUE', 'celery')
+CELERY_TASK_SOFT_TIME_LIMIT = 120
+CELERY_TASK_TIME_LIMIT = 150
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+AI_QA_ENABLED = os.getenv('AI_QA_ENABLED', 'false').lower() == 'true'
+AI_QA_TOTAL_QUESTION_LIMIT = int(os.getenv('AI_QA_TOTAL_QUESTION_LIMIT', '0'))
+AI_LLM_PROVIDER = os.getenv('AI_LLM_PROVIDER', 'fake')
+AI_LLM_EXTERNAL_ENABLED = os.getenv('AI_LLM_EXTERNAL_ENABLED', 'false').lower() == 'true'
+AI_LLM_EVAL_MODE = os.getenv('AI_LLM_EVAL_MODE', 'false').lower() == 'true'
+AI_LLM_MODEL = os.getenv('AI_LLM_MODEL', 'gpt-4o-mini')
+AI_LLM_PROMPT_REVISION = os.getenv('AI_LLM_PROMPT_REVISION', 'grounded-v1')
+AI_LLM_TIMEOUT_SECONDS = int(os.getenv('AI_LLM_TIMEOUT_SECONDS', '30'))
+AI_LLM_MAX_OUTPUT_TOKENS = int(os.getenv('AI_LLM_MAX_OUTPUT_TOKENS', '400'))
+AI_QA_MAX_CONTEXT_CHARS = int(os.getenv('AI_QA_MAX_CONTEXT_CHARS', '6000'))
+AI_QA_MAX_ATTEMPTS = int(os.getenv('AI_QA_MAX_ATTEMPTS', '2'))
+AI_QA_LEASE_SECONDS = int(os.getenv('AI_QA_LEASE_SECONDS', '120'))

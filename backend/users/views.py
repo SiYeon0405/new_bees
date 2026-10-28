@@ -5,8 +5,11 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from .models import User
+from .services import register_user
 from .serializers import (
     EmailTokenObtainPairSerializer,
     UserDetailSerializer,
@@ -23,20 +26,9 @@ class SignupView(APIView):
         return Response({'error': 'GET 요청은 지원되지 않습니다.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def post(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        nickname = request.data.get('nickname')
-
-        if not email or not password or not nickname:
-            return Response({'error': '모든 항목을 입력해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if User.objects.filter(email=email).exists():
-            return Response({'error': '이미 존재하는 이메일입니다.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if User.objects.filter(nickname=nickname).exists():
-            return Response({'error': '이미 존재하는 닉네임입니다.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        User.objects.create_user(email=email, password=password, nickname=nickname)
+        _, errors = register_user(request.data.get('email'), request.data.get('nickname'), request.data.get('password'))
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         return Response({'message': '회원가입이 완료되었습니다.'}, status=status.HTTP_201_CREATED)
 
 
@@ -77,6 +69,11 @@ class ChangePasswordView(APIView):
         if serializer.is_valid():
             if not request.user.check_password(serializer.validated_data['old_password']):
                 return Response({'error': '기존 비밀번호가 틀렸습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                validate_password(serializer.validated_data['new_password'], request.user)
+            except DjangoValidationError as exc:
+                return Response({'error': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
 
             request.user.set_password(serializer.validated_data['new_password'])
             request.user.save()
